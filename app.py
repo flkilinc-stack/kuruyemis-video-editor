@@ -3,11 +3,38 @@ import subprocess
 import urllib.request
 import os
 import uuid
+import json
 
 app = Flask(__name__)
 
 VIDEOS_DIR = '/tmp/edited_videos'
 os.makedirs(VIDEOS_DIR, exist_ok=True)
+
+_drive_service = None
+
+
+def get_drive_service():
+    global _drive_service
+    if _drive_service is None:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+        sa_info = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
+        creds = service_account.Credentials.from_service_account_info(
+            sa_info, scopes=['https://www.googleapis.com/auth/drive.readonly']
+        )
+        _drive_service = build('drive', 'v3', credentials=creds)
+    return _drive_service
+
+
+def download_drive_file(file_id, dest_path):
+    from googleapiclient.http import MediaIoBaseDownload
+    service = get_drive_service()
+    req = service.files().get_media(fileId=file_id)
+    with open(dest_path, 'wb') as f:
+        downloader = MediaIoBaseDownload(f, req)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
 
 
 def write_text_file(path, text):
@@ -25,13 +52,14 @@ def edit_video():
     video_file = request.files.get('video')
     data = request.get_json(silent=True) or request.form
 
-    video_url = data.get('video_url') if not video_file else None
+    file_id   = data.get('file_id') if not video_file else None
+    video_url = data.get('video_url') if not video_file and not file_id else None
     urun_adi  = data.get('urun_adi', 'KURUYEMIS').upper()
     hook      = data.get('hook', '')
     konum     = data.get('konum', '📍 NAZİLLİ/AYDIN  📞 0505 041 07 25')
 
-    if not video_file and not video_url:
-        return jsonify({'error': 'video dosyasi veya video_url gerekli'}), 400
+    if not video_file and not video_url and not file_id:
+        return jsonify({'error': 'video dosyasi, file_id veya video_url gerekli'}), 400
 
     job_id      = str(uuid.uuid4())
     input_path  = f'/tmp/{job_id}_in.mp4'
@@ -47,6 +75,8 @@ def edit_video():
     try:
         if video_file:
             video_file.save(input_path)
+        elif file_id:
+            download_drive_file(file_id, input_path)
         else:
             req = urllib.request.Request(video_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=60) as resp, open(input_path, 'wb') as f:
