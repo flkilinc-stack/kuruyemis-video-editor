@@ -22,14 +22,16 @@ def health():
 
 @app.route('/edit-video', methods=['POST'])
 def edit_video():
-    data = request.json or {}
-    video_url = data.get('video_url')
+    video_file = request.files.get('video')
+    data = request.get_json(silent=True) or request.form
+
+    video_url = data.get('video_url') if not video_file else None
     urun_adi  = data.get('urun_adi', 'KURUYEMIS').upper()
     hook      = data.get('hook', '')
     konum     = data.get('konum', '📍 NAZİLLİ/AYDIN  📞 0505 041 07 25')
 
-    if not video_url:
-        return jsonify({'error': 'video_url gerekli'}), 400
+    if not video_file and not video_url:
+        return jsonify({'error': 'video dosyasi veya video_url gerekli'}), 400
 
     job_id      = str(uuid.uuid4())
     input_path  = f'/tmp/{job_id}_in.mp4'
@@ -43,9 +45,12 @@ def edit_video():
     write_text_file(konum_file, konum)
 
     try:
-        req = urllib.request.Request(video_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=60) as resp, open(input_path, 'wb') as f:
-            f.write(resp.read())
+        if video_file:
+            video_file.save(input_path)
+        else:
+            req = urllib.request.Request(video_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=60) as resp, open(input_path, 'wb') as f:
+                f.write(resp.read())
 
         font_bold    = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
         font_regular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
