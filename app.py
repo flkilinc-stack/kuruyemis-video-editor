@@ -122,6 +122,7 @@ def edit_video():
         font_regular = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 
         vf = (
+            "scale=1080:-2,"
             "drawbox=x=0:y=0:w=iw:h=130:color=black@0.65:t=fill,"
             f"drawtext=fontfile='{font_bold}':textfile='{title_file}':"
             "fontsize=58:fontcolor=white:x=(w-text_w)/2:y=35:"
