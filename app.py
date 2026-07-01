@@ -47,6 +47,31 @@ def health():
     return jsonify({'status': 'ok'})
 
 
+@app.route('/debug-drive')
+def debug_drive():
+    from google.oauth2 import service_account
+    result = {}
+    try:
+        sa_info = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
+        result['service_account_email'] = sa_info.get('client_email')
+    except Exception as e:
+        return jsonify({'error': f'could not read GOOGLE_SERVICE_ACCOUNT_JSON: {e}'}), 500
+
+    service = get_drive_service()
+    for label, fid in [
+        ('top_folder', '1PmjZtYYlMFUNS6Zx8hohEV3z6_L4Vbg7'),
+        ('sub_folder', '1EB16caPpsCwPBCROgUsjyLCMO7kSpkia'),
+        ('video_file', '1ExhChHa11MTpBfhUY0NpbNbrBpt2ylu5'),
+    ]:
+        try:
+            meta = service.files().get(fileId=fid, fields='id,name,mimeType,owners,shared', supportsAllDrives=True).execute()
+            result[label] = meta
+        except Exception as e:
+            result[label] = {'error': str(e)}
+
+    return jsonify(result)
+
+
 @app.route('/edit-video', methods=['POST'])
 def edit_video():
     video_file = request.files.get('video')
