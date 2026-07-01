@@ -69,6 +69,17 @@ def debug_drive():
         except Exception as e:
             result[label] = {'error': str(e)}
 
+    try:
+        listing = service.files().list(
+            q="'1EB16caPpsCwPBCROgUsjyLCMO7kSpkia' in parents and trashed=false",
+            fields='files(id,name,mimeType)',
+            includeItemsFromAllDrives=True,
+            supportsAllDrives=True,
+        ).execute()
+        result['list_sub_folder_children'] = listing
+    except Exception as e:
+        result['list_sub_folder_children'] = {'error': str(e)}
+
     return jsonify(result)
 
 
