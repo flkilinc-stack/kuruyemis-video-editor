@@ -146,7 +146,7 @@ def edit_video():
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
 
         if result.returncode != 0:
-            return jsonify({'error': 'FFmpeg hatasi', 'details': result.stderr[-1000:]}), 500
+            return jsonify({'error': 'FFmpeg hatasi', 'returncode': result.returncode, 'details': result.stderr[-4000:]}), 500
 
         host = request.host_url.rstrip('/')
         return jsonify({
