@@ -137,9 +137,10 @@ def edit_video():
         )
 
         cmd = [
-            'ffmpeg', '-i', input_path,
+            'ffmpeg', '-threads', '2', '-i', input_path,
             '-vf', vf,
-            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26',
+            '-threads', '2',
             '-c:a', 'copy',
             '-y', output_path
         ]
